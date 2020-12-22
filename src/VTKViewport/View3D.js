@@ -9,6 +9,10 @@ import ViewportOverlay from '../ViewportOverlay/ViewportOverlay.js';
 import { ViewTypes } from 'vtk.js/Sources/Widgets/Core/WidgetManager/Constants';
 import { createSub } from '../lib/createSub.js';
 import createLabelPipeline from './createLabelPipeline';
+import {
+  toLowHighRange,
+  toWindowLevel,
+} from '../lib/windowLevelRangeConverter';
 
 export default class View3D extends Component {
   static propTypes = {
@@ -50,6 +54,45 @@ export default class View3D extends Component {
       paintStart: createSub(),
       paintEnd: createSub(),
     };
+
+    this.state = {
+      voi: this.getVOI(props.volumes[0]),
+    };
+  }
+
+  applyVOI() {
+    if (this.props.volumes) {
+      const actor = this.props.volumes[0];
+      const { lower, upper } = toLowHighRange(
+        this.state.voi.windowWidth,
+        this.state.voi.windowCenter
+      );
+
+      const ctf = actor.getProperty().getRGBTransferFunction(0);
+      ctf.removeAllPoints();
+      ctf.addRGBPoint(lower, 0, 0, 0);
+      ctf.addRGBPoint(upper, 1, 1, 1);
+
+      const opacity = actor.getProperty().getScalarOpacity(0);
+      opacity.removeAllPoints();
+      opacity.addPoint(lower, 0);
+      opacity.addPoint(upper, 1);
+
+      this.renderWindow.render();
+    }
+  }
+
+  getVOI = actor => {
+    // Note: This controls window/level
+    const rgbTransferFunction = actor.getProperty().getRGBTransferFunction(0);
+    const range = rgbTransferFunction.getMappingRange();
+
+    return toWindowLevel(...range);
+  };
+
+  updateVOI(windowWidth, windowCenter) {
+    this.setState({ voi: { windowWidth, windowCenter } });
+    this.applyVOI();
   }
 
   componentDidMount() {
@@ -107,6 +150,8 @@ export default class View3D extends Component {
     // TODO: Not sure why this is necessary to force the initial draw
     this.genericRenderWindow.resize();
 
+    const boundUpdateVOI = this.updateVOI.bind(this);
+
     if (this.props.onCreated) {
       /**
        * Note: The contents of this Object are
@@ -117,6 +162,7 @@ export default class View3D extends Component {
         genericRenderWindow: this.genericRenderWindow,
         widgetManager: this.widgetManager,
         container: this.container.current,
+        updateVOI: boundUpdateVOI,
         widgets,
         filters,
         actors,
@@ -295,30 +341,30 @@ export default class View3D extends Component {
 
     const style = { width: '100%', height: '100%', position: 'relative' };
 
-    let voi = {
-      windowCenter: 0,
-      windowWidth: 0,
-    };
+    // let voi = {
+    //   windowCenter: 0,
+    //   windowWidth: 0,
+    // };
 
-    if (this.pipeline) {
-      const actor = this.props.volumes[0];
+    // if (this.pipeline) {
+    //   const actor = this.props.volumes[0];
 
-      // Note: This controls window/level
-      const rgbTransferFunction = actor.getProperty().getRGBTransferFunction(0);
-      const range = rgbTransferFunction.getMappingRange();
-      const windowWidth = range[0] + range[1];
-      const windowCenter = range[0] + windowWidth / 2;
+    //   // Note: This controls window/level
+    //   const rgbTransferFunction = actor.getProperty().getRGBTransferFunction(0);
+    //   const range = rgbTransferFunction.getMappingRange();
+    //   const windowWidth = range[0] + range[1];
+    //   const windowCenter = range[0] + windowWidth / 2;
 
-      voi = {
-        windowCenter,
-        windowWidth,
-      };
-    }
+    //   voi = {
+    //     windowCenter,
+    //     windowWidth,
+    //   };
+    // }
 
     return (
       <div style={style}>
         <div ref={this.container} style={style} />
-        <ViewportOverlay {...this.props.dataDetails} voi={voi} />
+        <ViewportOverlay {...this.props.dataDetails} voi={this.state.voi} />
       </div>
     );
   }
