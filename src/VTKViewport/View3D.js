@@ -55,17 +55,19 @@ export default class View3D extends Component {
       paintEnd: createSub(),
     };
 
+    const initialVOI = this.getVOI(props.volumes[0]);
     this.state = {
-      voi: this.getVOI(props.volumes[0]),
+      voi: Object.assign({}, initialVOI),
+      initialVOI: Object.assign({}, initialVOI),
     };
   }
 
-  applyVOI() {
+  applyVOI(voi) {
     if (this.props.volumes) {
       const actor = this.props.volumes[0];
       const { lower, upper } = toLowHighRange(
-        this.state.voi.windowWidth,
-        this.state.voi.windowCenter
+        voi.windowWidth,
+        voi.windowCenter
       );
 
       const ctf = actor.getProperty().getRGBTransferFunction(0);
@@ -92,7 +94,23 @@ export default class View3D extends Component {
 
   updateVOI(windowWidth, windowCenter) {
     this.setState({ voi: { windowWidth, windowCenter } });
-    this.applyVOI();
+    this.applyVOI({ windowWidth, windowCenter });
+  }
+
+  setInitialVOI(windowWidth, windowCenter) {
+    this.setState({ initialVOI: { windowWidth, windowCenter } });
+  }
+
+  resetWindowLevel() {
+    const renderWindow = this.genericRenderWindow.getRenderWindow();
+    if (this.props.volumes) {
+      this.updateVOI(
+        this.state.initialVOI.windowWidth,
+        this.state.initialVOI.windowCenter
+      );
+
+      renderWindow.render();
+    }
   }
 
   componentDidMount() {
@@ -151,6 +169,8 @@ export default class View3D extends Component {
     this.genericRenderWindow.resize();
 
     const boundUpdateVOI = this.updateVOI.bind(this);
+    const boundSetInitialVOI = this.setInitialVOI.bind(this);
+    const boundResetWindowLevel = this.resetWindowLevel.bind(this);
 
     if (this.props.onCreated) {
       /**
@@ -163,6 +183,8 @@ export default class View3D extends Component {
         widgetManager: this.widgetManager,
         container: this.container.current,
         updateVOI: boundUpdateVOI,
+        setInitialVOI: boundSetInitialVOI,
+        resetWindowLevel: boundResetWindowLevel,
         widgets,
         filters,
         actors,
