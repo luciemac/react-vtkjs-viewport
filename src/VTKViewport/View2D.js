@@ -219,6 +219,7 @@ export default class View2D extends Component {
 
     const boundUpdateVOI = this.updateVOI.bind(this);
     const boundSetInitialVOI = this.setInitialVOI.bind(this);
+    const boundGetCurrentVOI = this.getCurrentVOI.bind(this);
     const boundGetOrienation = this.getOrientation.bind(this);
     const boundSetOrientation = this.setOrientation.bind(this);
     const boundResetOrientation = this.resetOrientation.bind(this);
@@ -266,6 +267,7 @@ export default class View2D extends Component {
         updateImage: boundUpdateImage,
         updateVOI: boundUpdateVOI,
         setInitialVOI: boundSetInitialVOI,
+        getCurrentVOI: boundGetCurrentVOI,
         getOrientation: boundGetOrienation,
         setOrientation: boundSetOrientation,
         resetOrientation: boundResetOrientation,
@@ -473,6 +475,9 @@ export default class View2D extends Component {
 
   updateVOI(windowWidth, windowCenter) {
     this.setState({ voi: { windowWidth, windowCenter } });
+  }
+  getCurrentVOI() {
+    return this.state.voi;
   }
 
   setInitialVOI(windowWidth, windowCenter) {
