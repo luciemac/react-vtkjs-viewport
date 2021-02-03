@@ -59,6 +59,7 @@ export default class View3D extends Component {
     this.state = {
       voi: Object.assign({}, initialVOI),
       initialVOI: Object.assign({}, initialVOI),
+      cameraInitialParameters: null,
     };
   }
 
@@ -110,6 +111,17 @@ export default class View3D extends Component {
       );
 
       renderWindow.render();
+    }
+  }
+
+  resetCamera() {
+    if (this.state.cameraInitialParameters) {
+      const camera = this.renderer.getActiveCamera();
+      camera.setPosition(...this.state.cameraInitialParameters.position);
+      camera.setViewUp(this.state.cameraInitialParameters.viewUp);
+      camera.setFocalPoint(...this.state.cameraInitialParameters.focalPoint);
+
+      this.renderWindow.render();
     }
   }
 
@@ -168,9 +180,19 @@ export default class View3D extends Component {
     // TODO: Not sure why this is necessary to force the initial draw
     this.genericRenderWindow.resize();
 
+    // Set initial camera parameters
+    const camera = this.renderer.getActiveCamera();
+    const cameraInitialParameters = {
+      position: camera.getPosition(),
+      viewUp: camera.getViewUp(),
+      focalPoint: camera.getFocalPoint(),
+    };
+    this.setState({ cameraInitialParameters });
+
     const boundUpdateVOI = this.updateVOI.bind(this);
     const boundSetInitialVOI = this.setInitialVOI.bind(this);
     const boundResetWindowLevel = this.resetWindowLevel.bind(this);
+    const boundResetCamera = this.resetCamera.bind(this);
 
     if (this.props.onCreated) {
       /**
@@ -185,6 +207,7 @@ export default class View3D extends Component {
         updateVOI: boundUpdateVOI,
         setInitialVOI: boundSetInitialVOI,
         resetWindowLevel: boundResetWindowLevel,
+        resetCamera: boundResetCamera,
         widgets,
         filters,
         actors,

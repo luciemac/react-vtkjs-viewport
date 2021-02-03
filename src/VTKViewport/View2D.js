@@ -476,6 +476,7 @@ export default class View2D extends Component {
   updateVOI(windowWidth, windowCenter) {
     this.setState({ voi: { windowWidth, windowCenter } });
   }
+
   getCurrentVOI() {
     return this.state.voi;
   }
