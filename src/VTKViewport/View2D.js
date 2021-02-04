@@ -17,6 +17,7 @@ import { toLowHighRange } from '../lib/windowLevelRangeConverter';
 import createLabelPipeline from './createLabelPipeline';
 import { uuidv4 } from './../helpers';
 import setGlobalOpacity from './setGlobalOpacity';
+import { BlendMode } from 'vtk.js/Sources/Rendering/Core/VolumeMapper/Constants';
 
 const throttle = cornerstoneTools.importInternal('util/throttle');
 
@@ -242,6 +243,7 @@ export default class View2D extends Component {
     const boundSetOutlineThickness = this.setOutlineThickness.bind(this);
     const boundOutlineRendering = this.setOutlineRendering.bind(this);
     const boundRequestNewSegmentation = this.requestNewSegmentation.bind(this);
+    const boundResetMIP = this.resetMIP.bind(this);
 
     this.svgWidgets = {};
 
@@ -276,6 +278,7 @@ export default class View2D extends Component {
         getSliceNormal: boundGetSliceNormal,
         setInteractorStyle: boundSetInteractorStyle,
         getSlabThickness: boundGetSlabThickness,
+        resetMIP: boundResetMIP,
         setSlabThickness: boundSetSlabThickness,
         setSegmentRGB: boundSetSegmentRGB,
         setSegmentRGBA: boundSetSegmentRGBA,
@@ -356,6 +359,14 @@ export default class View2D extends Component {
       );
 
       renderWindow.render();
+    }
+  }
+
+  resetMIP() {
+    if (this.props.volumes) {
+      this.props.volumes.forEach(volume => {
+        volume.getMapper().setBlendMode(BlendMode.COMPOSITE_BLEND);
+      });
     }
   }
 

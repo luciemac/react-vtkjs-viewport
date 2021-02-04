@@ -4,6 +4,7 @@ import vtkGenericRenderWindow from 'vtk.js/Sources/Rendering/Misc/GenericRenderW
 import vtkWidgetManager from 'vtk.js/Sources/Widgets/Core/WidgetManager';
 import vtkPaintFilter from 'vtk.js/Sources/Filters/General/PaintFilter';
 import vtkPaintWidget from 'vtk.js/Sources/Widgets/Widgets3D/PaintWidget';
+import { BlendMode } from 'vtk.js/Sources/Rendering/Core/VolumeMapper/Constants';
 
 import ViewportOverlay from '../ViewportOverlay/ViewportOverlay.js';
 import { ViewTypes } from 'vtk.js/Sources/Widgets/Core/WidgetManager/Constants';
@@ -114,6 +115,14 @@ export default class View3D extends Component {
     }
   }
 
+  resetMIP() {
+    if (this.props.volumes) {
+      this.props.volumes.forEach(volume => {
+        volume.getMapper().setBlendMode(BlendMode.COMPOSITE_BLEND);
+      });
+    }
+  }
+
   resetCamera() {
     if (this.state.cameraInitialParameters) {
       const camera = this.renderer.getActiveCamera();
@@ -191,8 +200,9 @@ export default class View3D extends Component {
 
     const boundUpdateVOI = this.updateVOI.bind(this);
     const boundSetInitialVOI = this.setInitialVOI.bind(this);
-    const boundResetWindowLevel = this.resetWindowLevel.bind(this);
     const boundResetCamera = this.resetCamera.bind(this);
+    const boundResetMIP = this.resetMIP.bind(this);
+    const boundResetWindowLevel = this.resetWindowLevel.bind(this);
 
     if (this.props.onCreated) {
       /**
@@ -206,8 +216,9 @@ export default class View3D extends Component {
         container: this.container.current,
         updateVOI: boundUpdateVOI,
         setInitialVOI: boundSetInitialVOI,
-        resetWindowLevel: boundResetWindowLevel,
         resetCamera: boundResetCamera,
+        resetMIP: boundResetMIP,
+        resetWindowLevel: boundResetWindowLevel,
         widgets,
         filters,
         actors,
@@ -371,6 +382,9 @@ export default class View3D extends Component {
     Object.keys(this.subs).forEach(k => {
       this.subs[k].unsubscribe();
     });
+
+    // Reset blend mode if needed
+    // this.props.volumes[0].getMapper().setBlendMode(BlendMode.COMPOSITE_BLEND);
 
     if (this.props.onDestroyed) {
       this.props.onDestroyed();
