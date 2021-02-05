@@ -10,6 +10,7 @@ import ViewportOverlay from '../ViewportOverlay/ViewportOverlay.js';
 import { ViewTypes } from 'vtk.js/Sources/Widgets/Core/WidgetManager/Constants';
 import { createSub } from '../lib/createSub.js';
 import createLabelPipeline from './createLabelPipeline';
+import vtkInteractorStyle3DWindowLevel from './vtkInteractorStyle3DWindowLevel';
 import {
   toLowHighRange,
   toWindowLevel,
@@ -64,8 +65,8 @@ export default class View3D extends Component {
     };
   }
 
-  applyVOI(voi) {
-    if (this.props.volumes) {
+  applyVOI(voi, shouldUpdate) {
+    if (shouldUpdate && this.props.volumes) {
       const actor = this.props.volumes[0];
       const { lower, upper } = toLowHighRange(
         voi.windowWidth,
@@ -95,8 +96,11 @@ export default class View3D extends Component {
   };
 
   updateVOI(windowWidth, windowCenter) {
+    const shouldUpdate =
+      windowWidth !== this.state.voi.windowWidth ||
+      windowCenter !== this.state.voi.windowCenter;
     this.setState({ voi: { windowWidth, windowCenter } });
-    this.applyVOI({ windowWidth, windowCenter });
+    this.applyVOI({ windowWidth, windowCenter }, shouldUpdate);
   }
 
   setInitialVOI(windowWidth, windowCenter) {
@@ -134,6 +138,15 @@ export default class View3D extends Component {
     }
   }
 
+  enableWindowLevel({ enableWindowLevel, onLevelsChangedCallback = null }) {
+    const iStyle = this.genericRenderWindow
+      .getInteractor()
+      .getInteractorStyle();
+    iStyle.setEnableWindowLevel(enableWindowLevel);
+    iStyle.setVolumeActor(this.props.volumes[0]);
+    iStyle.setOnLevelsChanged(onLevelsChangedCallback);
+  }
+
   componentDidMount() {
     this.genericRenderWindow = vtkGenericRenderWindow.newInstance({
       background: [0, 0, 0],
@@ -151,6 +164,10 @@ export default class View3D extends Component {
 
     this.renderer = this.genericRenderWindow.getRenderer();
     this.renderWindow = this.genericRenderWindow.getRenderWindow();
+
+    this.genericRenderWindow
+      .getInteractor()
+      .setInteractorStyle(vtkInteractorStyle3DWindowLevel.newInstance());
 
     this.widgetManager.disablePicking();
     this.widgetManager.setRenderer(this.renderer);
@@ -198,6 +215,7 @@ export default class View3D extends Component {
     };
     this.setState({ cameraInitialParameters });
 
+    const boundEnableWindowLevel = this.enableWindowLevel.bind(this);
     const boundUpdateVOI = this.updateVOI.bind(this);
     const boundSetInitialVOI = this.setInitialVOI.bind(this);
     const boundResetCamera = this.resetCamera.bind(this);
@@ -214,6 +232,7 @@ export default class View3D extends Component {
         genericRenderWindow: this.genericRenderWindow,
         widgetManager: this.widgetManager,
         container: this.container.current,
+        enableWindowLevel: boundEnableWindowLevel,
         updateVOI: boundUpdateVOI,
         setInitialVOI: boundSetInitialVOI,
         resetCamera: boundResetCamera,

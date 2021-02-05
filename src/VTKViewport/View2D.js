@@ -484,8 +484,29 @@ export default class View2D extends Component {
     renderWindow.render();
   }
 
-  updateVOI(windowWidth, windowCenter) {
+  applyVOI(voi, shouldUpdate) {
+    if (shouldUpdate && this.props.volumes) {
+      const { lower, upper } = toLowHighRange(
+        voi.windowWidth,
+        voi.windowCenter
+      );
+
+      this.props.volumes[0]
+        .getProperty()
+        .getRGBTransferFunction(0)
+        .setMappingRange(lower, upper);
+
+      this.renderWindow.render();
+    }
+  }
+
+  updateVOI(windowWidth, windowCenter, updateRGBColorTransferFunction = false) {
+    const shouldUpdate =
+      windowWidth !== this.state.voi.windowWidth ||
+      windowCenter !== this.state.voi.windowCenter;
+
     this.setState({ voi: { windowWidth, windowCenter } });
+    this.applyVOI({ windowWidth, windowCenter }, shouldUpdate);
   }
 
   getCurrentVOI() {
