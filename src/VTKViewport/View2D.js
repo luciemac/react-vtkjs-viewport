@@ -631,7 +631,9 @@ export default class View2D extends Component {
           console.warn('Data to <Vtk2D> is not vtkVolume data');
         }
       });
-
+      if (prevProps.volumes) {
+        prevProps.volumes.forEach(this.renderer.removeVolume);
+      }
       if (this.props.volumes.length) {
         this.props.volumes.forEach(this.renderer.addVolume);
       } else {
@@ -639,6 +641,7 @@ export default class View2D extends Component {
       }
 
       this.renderWindow.render();
+      this.genericRenderWindow.getInteractor().render();
     }
 
     if (
